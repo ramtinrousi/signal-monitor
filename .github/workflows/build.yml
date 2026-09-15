@@ -9,22 +9,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Show repo files
+      - name: Test - Show files
         run: |
-          echo "=== All files ==="
+          pwd
           ls -la
-          echo ""
-          echo "=== .github contents ==="
-          ls -la .github/ 2>/dev/null || echo "no .github"
-          echo ""
-          echo "=== Checking main.py ==="
-          if [ -f "main.py" ]; then echo "main.py EXISTS"; else echo "main.py MISSING"; fi
-          echo ""
-          echo "=== Checking pyproject.toml ==="
-          if [ -f "pyproject.toml" ]; then echo "pyproject.toml EXISTS"; cat pyproject.toml; else echo "pyproject.toml MISSING"; fi
+
+      - name: Test - Show python
+        run: python --version || echo "no python"
 
       - name: Setup Java
         uses: actions/setup-java@v4
