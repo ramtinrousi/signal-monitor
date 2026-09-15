@@ -1,0 +1,18 @@
+[project]
+name = "signal-monitor"
+version = "1.0.0"
+description = "Signal Monitor App"
+requires-python = ">=3.9"
+
+[tool.flet]
+product = "Signal Monitor"
+org = "com.ramtin"
+bundle_id = "com.ramtin.signalmonitor"
+
+[tool.flet.android.permission]
+"android.permission.INTERNET" = true
+"android.permission.READ_EXTERNAL_STORAGE" = true
+"android.permission.WRITE_EXTERNAL_STORAGE" = true
+
+[tool.flet.app]
+path = "."
