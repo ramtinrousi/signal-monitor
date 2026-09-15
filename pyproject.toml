@@ -3,16 +3,33 @@ name = "signal-monitor"
 version = "1.0.0"
 description = "Signal Monitor App"
 requires-python = ">=3.9"
+dependencies = [
+    "flet==0.86.5",
+    "pandas",
+    "matplotlib",
+    "numpy",
+    "scipy",
+]
 
 [tool.flet]
 product = "Signal Monitor"
 org = "com.ramtin"
 bundle_id = "com.ramtin.signalmonitor"
+build_number = 1
+
+[tool.flet.app]
+path = "."
 
 [tool.flet.android.permission]
 "android.permission.INTERNET" = true
 "android.permission.READ_EXTERNAL_STORAGE" = true
 "android.permission.WRITE_EXTERNAL_STORAGE" = true
 
-[tool.flet.app]
-path = "."
+[tool.flet.android.build]
+# این خط باعث میشه کتابخانه‌ها برای اندروید کامپایل بشن
+include_packages = [
+    "pandas",
+    "matplotlib",
+    "numpy",
+    "scipy",
+]
