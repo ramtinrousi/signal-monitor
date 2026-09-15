@@ -15,6 +15,9 @@ jobs:
       - name: List files
         run: ls -la
 
+      - name: Show pyproject
+        run: cat pyproject.toml
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -35,13 +38,29 @@ jobs:
       - name: Install Flet
         run: pip install flet[all]
 
-      - name: Build APK
-        run: flet build apk
+      - name: Check Flet version
+        run: flet --version
 
-      - name: Upload APK
+      - name: Run Flet build and capture output
+        run: |
+          set +e
+          flet build apk > build_output.txt 2>&1
+          EXIT_CODE=$?
+          echo "================================"
+          echo "BUILD EXIT CODE: $EXIT_CODE"
+          echo "================================"
+          echo "OUTPUT:"
+          echo "================================"
+          cat build_output.txt
+          echo "================================"
+          echo "END OF OUTPUT"
+          echo "================================"
+          exit 0
+
+      - name: Upload build output
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: signal-monitor-apk
-          path: build/apk/*.apk
+          name: build-output
+          path: build_output.txt
           if-no-files-found: warn
