@@ -15,9 +15,6 @@ jobs:
       - name: List files
         run: ls -la
 
-      - name: Show pyproject
-        run: cat pyproject.toml
-
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -27,7 +24,7 @@ jobs:
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 3.24.3
+          flutter-version: 3.44.8
           channel: stable
 
       - name: Setup Python
@@ -38,23 +35,15 @@ jobs:
       - name: Install Flet
         run: pip install flet[all]
 
-      - name: Check Flet version
-        run: flet --version
-
-      - name: Run Flet build and capture output
+      - name: Build APK
         run: |
           set +e
-          flet build apk > build_output.txt 2>&1
+          echo "y" | flet build apk > build_output.txt 2>&1
           EXIT_CODE=$?
           echo "================================"
           echo "BUILD EXIT CODE: $EXIT_CODE"
           echo "================================"
-          echo "OUTPUT:"
-          echo "================================"
           cat build_output.txt
-          echo "================================"
-          echo "END OF OUTPUT"
-          echo "================================"
           exit 0
 
       - name: Upload build output
@@ -63,4 +52,12 @@ jobs:
         with:
           name: build-output
           path: build_output.txt
+          if-no-files-found: warn
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: signal-monitor-apk
+          path: build/apk/*.apk
           if-no-files-found: warn
