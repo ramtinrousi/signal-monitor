@@ -1,0 +1,63 @@
+name: Build Flet APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.24.3
+          channel: stable
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Flet
+        run: |
+          pip install --upgrade pip
+          pip install flet[all]
+
+      - name: Debug - Show files
+        run: |
+          echo "=== Files in root ==="
+          ls -la
+          echo "=== File: pyproject.toml ==="
+          cat pyproject.toml
+          echo "=== Flet version ==="
+          flet --version
+
+      - name: Build APK
+        run: |
+          flet build apk --arch arm64-v8a 2>&1 | tee build_log.txt
+
+      - name: Show Build Log
+        if: always()
+        run: |
+          echo "=== Build Log ==="
+          cat build_log.txt || echo "No log found"
+
+      - name: Upload APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: signal-monitor-apk
+          path: build/apk/*.apk
+          if-no-files-found: warn
