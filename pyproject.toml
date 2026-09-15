@@ -24,12 +24,3 @@ path = "."
 "android.permission.INTERNET" = true
 "android.permission.READ_EXTERNAL_STORAGE" = true
 "android.permission.WRITE_EXTERNAL_STORAGE" = true
-
-[tool.flet.android.build]
-# این خط باعث میشه کتابخانه‌ها برای اندروید کامپایل بشن
-include_packages = [
-    "pandas",
-    "matplotlib",
-    "numpy",
-    "scipy",
-]
