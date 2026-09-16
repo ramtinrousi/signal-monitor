@@ -1,11 +1,24 @@
 import io
 import flet as ft
 import pandas as pd
+import os
+config_dir = os.path.join(os.path.expanduser("~"), ".config", "matplotlib")
+os.makedirs(config_dir, exist_ok=True)
+os.environ['MPLCONFIGDIR'] = config_dir
+
+matplotlibrc_path = os.path.join(config_dir, 'matplotlibrc')
+if not os.path.exists(matplotlibrc_path):
+    with open(matplotlibrc_path, 'w') as f:
+        f.write('backend: Agg\n')
+os.environ['MATPLOTLIBRC'] = matplotlibrc_path
+
+import matplotlib
+matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import CubicSpline
 import base64
-import os
 import platform
 
 if platform.system() == "Windows":
