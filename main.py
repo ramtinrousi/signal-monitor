@@ -6,9 +6,7 @@ import flet as ft
 import pandas as pd
 import numpy as np
 
-# ====== رفع مشکل matplotlib روی اندروید ======
 def get_writable_dir():
-    """پیدا کردن یه مسیر قابل نوشتن برای هر پلتفرم"""
     candidates = [
         os.path.join(tempfile.gettempdir(), "mpl_config"),
         "/tmp/mpl_config",
@@ -18,7 +16,6 @@ def get_writable_dir():
     for candidate in candidates:
         try:
             os.makedirs(candidate, exist_ok=True)
-            # تست نوشتن
             test_file = os.path.join(candidate, ".writetest")
             with open(test_file, 'w') as f:
                 f.write('test')
@@ -39,7 +36,6 @@ if config_dir:
         os.environ['MATPLOTLIBRC'] = matplotlibrc_path
     except Exception:
         pass
-# ============================================
 
 import matplotlib
 matplotlib.use('Agg')
@@ -82,8 +78,8 @@ class SignalMonitorApp:
         self.fig, self.ax = plt.subplots(figsize=(5.0, 2.5))
         self.fig.patch.set_facecolor('#05070A')
         self.file_picker = ft.FilePicker()
-        self.file_picker.on_result = self.on_file_picker_result
         self.page.overlay.append(self.file_picker)
+        self.page.update()
 
         self.build_ui()
 
@@ -387,18 +383,19 @@ class SignalMonitorApp:
 
     async def _pick_files_async(self):
         try:
-            await self.file_picker.pick_files(allowed_extensions=["csv"])
+            files = await self.file_picker.pick_files(
+                allowed_extensions=["csv"],
+                allow_multiple=False
+            )
+            if files and len(files) > 0:
+                content = files[0].read()
+                self.load_csv_from_content(content)
+            else:
+                self.main_info_label.value = "❌ Cancelled"
+                self.page.update()
         except Exception as ex:
             self.main_info_label.value = f"❌ Error: {ex}"
             self.page.update()
-
-    def on_file_picker_result(self, e):
-        if e.files:
-            try:
-                self.load_csv_from_content(e.files[0].read())
-            except Exception as ex:
-                self.main_info_label.value = f"❌ Error: {ex}"
-                self.page.update()
 
     def load_csv_from_content(self, content: bytes):
         try:
