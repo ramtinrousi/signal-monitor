@@ -78,7 +78,7 @@ class SignalMonitorApp:
         self.fig, self.ax = plt.subplots(figsize=(5.0, 2.5))
         self.fig.patch.set_facecolor('#05070A')
         self.file_picker = ft.FilePicker()
-        self.page.overlay.append(self.file_picker)
+        self.page.services.append(self.file_picker)
         self.page.update()
 
         self.build_ui()
