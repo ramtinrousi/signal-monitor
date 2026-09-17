@@ -1,22 +1,50 @@
+
 import io
+import os
+import tempfile
 import flet as ft
 import pandas as pd
-import os
-config_dir = os.path.join(os.path.expanduser("~"), ".config", "matplotlib")
-os.makedirs(config_dir, exist_ok=True)
-os.environ['MPLCONFIGDIR'] = config_dir
+import numpy as np
 
-matplotlibrc_path = os.path.join(config_dir, 'matplotlibrc')
-if not os.path.exists(matplotlibrc_path):
-    with open(matplotlibrc_path, 'w') as f:
-        f.write('backend: Agg\n')
-os.environ['MATPLOTLIBRC'] = matplotlibrc_path
+# ====== رفع مشکل matplotlib روی اندروید ======
+def get_writable_dir():
+    """پیدا کردن یه مسیر قابل نوشتن برای هر پلتفرم"""
+    candidates = [
+        os.path.join(tempfile.gettempdir(), "mpl_config"),
+        "/tmp/mpl_config",
+        os.path.join(os.getcwd(), "mpl_config"),
+        os.path.join(os.path.expanduser("~"), ".mpl_config"),
+    ]
+    for candidate in candidates:
+        try:
+            os.makedirs(candidate, exist_ok=True)
+            # تست نوشتن
+            test_file = os.path.join(candidate, ".writetest")
+            with open(test_file, 'w') as f:
+                f.write('test')
+            os.remove(test_file)
+            return candidate
+        except (PermissionError, OSError, Exception):
+            continue
+    return None
+
+config_dir = get_writable_dir()
+if config_dir:
+    os.environ['MPLCONFIGDIR'] = config_dir
+    matplotlibrc_path = os.path.join(config_dir, 'matplotlibrc')
+    try:
+        if not os.path.exists(matplotlibrc_path):
+            with open(matplotlibrc_path, 'w') as f:
+                f.write('backend: Agg\n')
+        os.environ['MATPLOTLIBRC'] = matplotlibrc_path
+    except Exception:
+        pass
+# ============================================
 
 import matplotlib
 matplotlib.use('Agg')
-
 import matplotlib.pyplot as plt
-import numpy as np
+
 from scipy.interpolate import CubicSpline
 import base64
 import platform
@@ -24,7 +52,6 @@ import platform
 if platform.system() == "Windows":
     import tkinter as tk
     from tkinter import filedialog
-
 plt.style.use('dark_background')
 
 class SignalMonitorApp:
