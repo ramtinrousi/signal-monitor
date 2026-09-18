@@ -385,10 +385,21 @@ class SignalMonitorApp:
         try:
             files = await self.file_picker.pick_files(
                 allowed_extensions=["csv"],
-                allow_multiple=False
+                allow_multiple=False,
+                with_data=True  # ← این خط اضافه شد
             )
             if files and len(files) > 0:
-                content = files[0].read()
+                file = files[0]
+                if hasattr(file, 'bytes') and file.bytes:
+                    content = file.bytes
+                elif hasattr(file, 'path') and file.path:
+                    with open(file.path, 'rb') as f:
+                        content = f.read()
+                else:
+                    self.main_info_label.value = "❌ Cannot read file"
+                    self.page.update()
+                    return
+            
                 self.load_csv_from_content(content)
             else:
                 self.main_info_label.value = "❌ Cancelled"
