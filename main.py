@@ -1,4 +1,3 @@
-
 import io
 import os
 import tempfile
@@ -50,6 +49,7 @@ if platform.system() == "Windows":
     from tkinter import filedialog
 plt.style.use('dark_background')
 
+
 class SignalMonitorApp:
     def __init__(self, page: ft.Page):
         self.page = page
@@ -57,6 +57,7 @@ class SignalMonitorApp:
         self.page.window.width = 850
         self.page.window.height = 390
         self.page.window.resizable = True
+        self.page.window.full_screen = True
         self.page.bgcolor = "#05070A"
         self.page.padding = 3
         self.page.spacing = 2
@@ -86,10 +87,23 @@ class SignalMonitorApp:
     def build_ui(self):
         self.main_info_label = ft.Text("No Data", size=9, color="#808c9d", weight=ft.FontWeight.BOLD)
 
+        self.point_info_text = ft.Text(
+            "",
+            size=8,
+            color="#ffd103",
+            weight=ft.FontWeight.BOLD
+        )
+
         self.chart_image = ft.Image(
             src="",
             expand=True,
             fit="fill"
+        )
+
+        self.chart_gesture = ft.GestureDetector(
+            content=self.chart_image,
+            on_tap_down=self.on_chart_tap,
+            expand=True
         )
 
         left_panel = ft.Container(
@@ -98,7 +112,8 @@ class SignalMonitorApp:
                     ft.Text("📊 Signal Monitor", size=11, weight=ft.FontWeight.BOLD, color="#2456B2"),
                     self.main_info_label
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                self.chart_image
+                self.chart_gesture,
+                self.point_info_text
             ], spacing=1, expand=True),
             bgcolor="#0d121a",
             border_radius=4,
@@ -120,26 +135,31 @@ class SignalMonitorApp:
         )
 
         self.group_dropdown = ft.Dropdown(
-            label="Group",
             options=[ft.dropdown.Option("Select Group")],
             value="Select Group",
             text_size=9,
             dense=True,
             on_select=self.on_group_selected,
-            expand=True
+            expand=True,
+            height=22,
+            content_padding=ft.padding.symmetric(horizontal=6, vertical=0),
+            border_radius=3,
+            border_color="#40516b",
+            bgcolor="#0a0d13"
         )
+
         self.save_btn = ft.ElevatedButton(
-            "Save", 
-            on_click=self.save_group_to_txt, 
-            bgcolor="#121721", 
-            color="#ffd103", 
-            height=22, 
+            "Save",
+            on_click=self.save_group_to_txt,
+            bgcolor="#121721",
+            color="#ffd103",
+            height=22,
             style=ft.ButtonStyle(
                 shape=ft.RoundedRectangleBorder(radius=3),
                 side=ft.BorderSide(1, "#ffd103"),
                 text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD),
                 padding=2
-            ), 
+            ),
             expand=True
         )
 
@@ -159,23 +179,41 @@ class SignalMonitorApp:
         self.ymode_volt_btn = ft.ElevatedButton(
             "Volt", on_click=lambda e: self.set_ymode("Voltage"),
             bgcolor="#ffd103", color="#0d0d0d", height=21, expand=True,
-            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2), text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0)
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2),
+                                  text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0)
         )
         self.ymode_dig_btn = ft.ElevatedButton(
             "Digital", on_click=lambda e: self.set_ymode("Digital"),
             bgcolor="#1a2230", color="#dcdfe4", height=21, expand=True,
-            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2), text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0)
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2),
+                                  text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0)
         )
-        self.ymode_group = ft.Row([ft.Text("Mode:", size=9, weight=ft.FontWeight.BOLD, color="#2456B2"), self.ymode_volt_btn, self.ymode_dig_btn], spacing=2)
+        self.ymode_group = ft.Row([
+            ft.Text("Mode:", size=9, weight=ft.FontWeight.BOLD, color="#2456B2"),
+            self.ymode_volt_btn, self.ymode_dig_btn
+        ], spacing=2)
 
         # واحدهای ولتاژ
-        self.v_v_btn = ft.ElevatedButton("V", on_click=lambda e: self.set_vunit("Volt (V)"), bgcolor="#ffd103", color="#0d0d0d", height=21, expand=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2), text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0))
-        self.v_mv_btn = ft.ElevatedButton("mV", on_click=lambda e: self.set_vunit("Millivolt (mV)"), bgcolor="#1a2230", color="#dcdfe4", height=21, expand=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2), text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0))
-        self.v_uv_btn = ft.ElevatedButton("uV", on_click=lambda e: self.set_vunit("Microvolt (uV)"), bgcolor="#1a2230", color="#dcdfe4", height=21, expand=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2), text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0))
-        self.yunit_group = ft.Row([ft.Text("Unit:", size=9, weight=ft.FontWeight.BOLD, color="#2456B2"), self.v_v_btn, self.v_mv_btn, self.v_uv_btn], spacing=2)
+        self.v_v_btn = ft.ElevatedButton("V", on_click=lambda e: self.set_vunit("Volt (V)"),
+                                          bgcolor="#ffd103", color="#0d0d0d", height=21, expand=True,
+                                          style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2),
+                                                                text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0))
+        self.v_mv_btn = ft.ElevatedButton("mV", on_click=lambda e: self.set_vunit("Millivolt (mV)"),
+                                           bgcolor="#1a2230", color="#dcdfe4", height=21, expand=True,
+                                           style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2),
+                                                                 text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0))
+        self.v_uv_btn = ft.ElevatedButton("uV", on_click=lambda e: self.set_vunit("Microvolt (uV)"),
+                                           bgcolor="#1a2230", color="#dcdfe4", height=21, expand=True,
+                                           style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2),
+                                                                 text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0))
+        self.yunit_group = ft.Row([
+            ft.Text("Unit:", size=9, weight=ft.FontWeight.BOLD, color="#2456B2"),
+            self.v_v_btn, self.v_mv_btn, self.v_uv_btn
+        ], spacing=2)
 
-        self.vrange_text = ft.Text("0.9V", size=9, weight=ft.FontWeight.BOLD, color="#ffd103", text_align=ft.TextAlign.CENTER)
-        
+        self.vrange_text = ft.Text("0.9V", size=9, weight=ft.FontWeight.BOLD,
+                                    color="#ffd103", text_align=ft.TextAlign.CENTER)
+
         vrange_controls = ft.Row([
             ft.ElevatedButton(
                 content=ft.Text("−", size=12, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER),
@@ -205,35 +243,60 @@ class SignalMonitorApp:
 
         self.freq_input = ft.TextField(hint_text="1000", text_size=9, height=21, content_padding=2)
 
-        self.t_s_btn = ft.ElevatedButton("s", on_click=lambda e: self.set_tunit("Second (s)"), bgcolor="#ffd103", color="#0d0d0d", height=21, expand=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2), text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0))
-        self.t_ms_btn = ft.ElevatedButton("ms", on_click=lambda e: self.set_tunit("Millisecond (ms)"), bgcolor="#1a2230", color="#dcdfe4", height=21, expand=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2), text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0))
-        self.t_us_btn = ft.ElevatedButton("us", on_click=lambda e: self.set_tunit("Microsecond (us)"), bgcolor="#1a2230", color="#dcdfe4", height=21, expand=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2), text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0))
-        tunit_row = ft.Row([ft.Text("T-Unit:", size=9, weight=ft.FontWeight.BOLD, color="#2456B2"), self.t_s_btn, self.t_ms_btn, self.t_us_btn], spacing=2)
+        self.t_s_btn = ft.ElevatedButton("s", on_click=lambda e: self.set_tunit("Second (s)"),
+                                          bgcolor="#ffd103", color="#0d0d0d", height=21, expand=True,
+                                          style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2),
+                                                                text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0))
+        self.t_ms_btn = ft.ElevatedButton("ms", on_click=lambda e: self.set_tunit("Millisecond (ms)"),
+                                           bgcolor="#1a2230", color="#dcdfe4", height=21, expand=True,
+                                           style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2),
+                                                                 text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0))
+        self.t_us_btn = ft.ElevatedButton("us", on_click=lambda e: self.set_tunit("Microsecond (us)"),
+                                           bgcolor="#1a2230", color="#dcdfe4", height=21, expand=True,
+                                           style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2),
+                                                                 text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0))
+        tunit_row = ft.Row([
+            ft.Text("T-Unit:", size=9, weight=ft.FontWeight.BOLD, color="#2456B2"),
+            self.t_s_btn, self.t_ms_btn, self.t_us_btn
+        ], spacing=2)
 
-        self.rng_samp_btn = ft.ElevatedButton("Sample", on_click=lambda e: self.set_rangemode("Sample"), bgcolor="#ffd103", color="#0d0d0d", height=21, expand=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2), text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0))
-        self.rng_time_btn = ft.ElevatedButton("Time", on_click=lambda e: self.set_rangemode("Time"), bgcolor="#1a2230", color="#dcdfe4", height=21, expand=True, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2), text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0))
-        rangemode_row = ft.Row([ft.Text("Range:", size=9, weight=ft.FontWeight.BOLD, color="#2456B2"), self.rng_samp_btn, self.rng_time_btn], spacing=2)
+        self.rng_samp_btn = ft.ElevatedButton("Sample", on_click=lambda e: self.set_rangemode("Sample"),
+                                               bgcolor="#ffd103", color="#0d0d0d", height=21, expand=True,
+                                               style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2),
+                                                                     text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0))
+        self.rng_time_btn = ft.ElevatedButton("Time", on_click=lambda e: self.set_rangemode("Time"),
+                                               bgcolor="#1a2230", color="#dcdfe4", height=21, expand=True,
+                                               style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2),
+                                                                     text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0))
+        rangemode_row = ft.Row([
+            ft.Text("Range:", size=9, weight=ft.FontWeight.BOLD, color="#2456B2"),
+            self.rng_samp_btn, self.rng_time_btn
+        ], spacing=2)
 
-        # اصلاح طول فیلدهای S و E با استفاده از expand=True برای توازن کامل
         self.range_start_input = ft.TextField(hint_text="0", text_size=9, height=21, content_padding=2, expand=True)
         self.range_end_input = ft.TextField(hint_text="max", text_size=9, height=21, content_padding=2, expand=True)
 
         apply_btn = ft.ElevatedButton(
             "Apply", on_click=self.apply_range, bgcolor="#2456B2", color="#dcdfe4", height=21, expand=True,
-            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2), text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0)
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2),
+                                  text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0)
         )
         reset_btn = ft.ElevatedButton(
             "Reset", on_click=self.reset_view, bgcolor="#121721", color="#ffd103", height=21, expand=True,
-            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2), side=ft.BorderSide(1, "#ffd103"), text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0)
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=2),
+                                  side=ft.BorderSide(1, "#ffd103"),
+                                  text_style=ft.TextStyle(size=9, weight=ft.FontWeight.BOLD), padding=0)
         )
 
         horizontal_card = ft.Container(
             content=ft.Column([
                 ft.Text("⏱️ Horizontal Setup", size=9, weight=ft.FontWeight.BOLD, color="#2456B2"),
-                ft.Row([ft.Text("Freq(Hz):", size=9, color="#2456B2"), self.freq_input], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
+                ft.Row([ft.Text("Freq(Hz):", size=9, color="#2456B2"), self.freq_input],
+                       alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 tunit_row,
                 rangemode_row,
-                ft.Row([ft.Text("S:", size=9, color="#2456B2"), self.range_start_input, ft.Text("E:", size=9, color="#2456B2"), self.range_end_input], spacing=2),
+                ft.Row([ft.Text("S:", size=9, color="#2456B2"), self.range_start_input,
+                        ft.Text("E:", size=9, color="#2456B2"), self.range_end_input], spacing=2),
                 ft.Row([apply_btn, reset_btn], spacing=2)
             ], spacing=1),
             bgcolor="#121721",
@@ -242,7 +305,6 @@ class SignalMonitorApp:
             padding=3
         )
 
-        # پنل کنترل سمت راست کاملاً فشرده و متناسب بدون اسکرول
         right_panel = ft.Container(
             content=ft.Column([
                 ft.Text("⚙️ Controls", size=10, weight=ft.FontWeight.BOLD, color="#2456B2"),
@@ -284,7 +346,8 @@ class SignalMonitorApp:
         val_text = ft.Text("--", size=10, weight=ft.FontWeight.BOLD, color="#ffd103")
         container = ft.Container(
             content=ft.Column([
-                ft.Text(title, size=8, weight=ft.FontWeight.BOLD, color="#2456B2", text_align=ft.TextAlign.CENTER),
+                ft.Text(title, size=8, weight=ft.FontWeight.BOLD, color="#2456B2",
+                        text_align=ft.TextAlign.CENTER),
                 ft.Container(
                     content=val_text,
                     bgcolor="#05070A",
@@ -337,7 +400,8 @@ class SignalMonitorApp:
 
     def set_tunit(self, unit):
         self.t_unit = unit
-        for btn, u in [(self.t_s_btn, "Second (s)"), (self.t_ms_btn, "Millisecond (ms)"), (self.t_us_btn, "Microsecond (us)")]:
+        for btn, u in [(self.t_s_btn, "Second (s)"), (self.t_ms_btn, "Millisecond (ms)"),
+                       (self.t_us_btn, "Microsecond (us)")]:
             if u == unit:
                 btn.bgcolor = "#ffd103"
                 btn.color = "#0d0d0d"
@@ -370,7 +434,10 @@ class SignalMonitorApp:
         if platform.system() == "Windows":
             root = tk.Tk()
             root.withdraw()
-            file_path = filedialog.askopenfilename(title="انتخاب فایل CSV", filetypes=[("CSV files", "*.csv")])
+            file_path = filedialog.askopenfilename(
+                title="انتخاب فایل CSV",
+                filetypes=[("CSV files", "*.csv")]
+            )
             if file_path:
                 self.main_info_label.value = f"✅ File: {os.path.basename(file_path)}"
                 self.page.update()
@@ -386,7 +453,7 @@ class SignalMonitorApp:
             files = await self.file_picker.pick_files(
                 allowed_extensions=["csv"],
                 allow_multiple=False,
-                with_data=True  # ← این خط اضافه شد
+                with_data=True
             )
             if files and len(files) > 0:
                 file = files[0]
@@ -399,7 +466,7 @@ class SignalMonitorApp:
                     self.main_info_label.value = "❌ Cannot read file"
                     self.page.update()
                     return
-            
+
                 self.load_csv_from_content(content)
             else:
                 self.main_info_label.value = "❌ Cancelled"
@@ -658,8 +725,10 @@ class SignalMonitorApp:
 
         if self.freq_value > 0:
             raw_seconds_orig = np.arange(start_idx, end_idx + 1) / self.freq_value
-            x_orig = raw_seconds_orig * 1000.0 if self.t_unit == 'Millisecond (ms)' else (raw_seconds_orig * 1000000.0 if self.t_unit == 'Microsecond (us)' else raw_seconds_orig)
-            x_label = 'Time (ms)' if self.t_unit == 'Millisecond (ms)' else ('Time (us)' if self.t_unit == 'Microsecond (us)' else 'Time (s)')
+            x_orig = raw_seconds_orig * 1000.0 if self.t_unit == 'Millisecond (ms)' else (
+                raw_seconds_orig * 1000000.0 if self.t_unit == 'Microsecond (us)' else raw_seconds_orig)
+            x_label = 'Time (ms)' if self.t_unit == 'Millisecond (ms)' else (
+                'Time (us)' if self.t_unit == 'Microsecond (us)' else 'Time (s)')
             title_time = f' (fs={self.freq_value:.0f}Hz)'
         else:
             x_orig = np.arange(start_idx, end_idx + 1)
@@ -674,14 +743,16 @@ class SignalMonitorApp:
 
             if self.freq_value > 0:
                 raw_seconds_dense = (start_idx + x_dense_indices) / self.freq_value
-                x_smooth = raw_seconds_dense * 1000.0 if self.t_unit == 'Millisecond (ms)' else (raw_seconds_dense * 1000000.0 if self.t_unit == 'Microsecond (us)' else raw_seconds_dense)
+                x_smooth = raw_seconds_dense * 1000.0 if self.t_unit == 'Millisecond (ms)' else (
+                    raw_seconds_dense * 1000000.0 if self.t_unit == 'Microsecond (us)' else raw_seconds_dense)
             else:
                 x_smooth = start_idx + x_dense_indices
 
             self.ax.plot(x_smooth, y_smooth, linewidth=1.0, color='#3A86FF', alpha=0.9)
             self.ax.plot(x_orig, y_zoomed_orig, 'o', color='#FFD166', markersize=2.5)
         else:
-            self.ax.plot(x_orig, y_zoomed_orig, '-o', linewidth=1.0, color='#3A86FF', markerfacecolor='#FFD166', markeredgecolor='#FFD166', markersize=2.5)
+            self.ax.plot(x_orig, y_zoomed_orig, '-o', linewidth=1.0, color='#3A86FF',
+                         markerfacecolor='#FFD166', markeredgecolor='#FFD166', markersize=2.5)
 
         title_text = f'Group {self.current_group_index + 1} - {title_suffix}{title_time} ({len(y_zoomed_orig)} pts)'
         self.ax.set_title(title_text, color='#E2E8F0', fontsize=8, fontweight='bold', pad=2)
@@ -710,8 +781,58 @@ class SignalMonitorApp:
         self.update_bottom_stats(data)
         self.page.update()
 
+    def on_chart_tap(self, e):
+        if not self.all_groups_data or self.total_samples == 0:
+            return
+        if not self.chart_image.width:
+            return
+        x_percent = e.local_x / self.chart_image.width
+        x_percent = max(0.0, min(1.0, x_percent))
+        self.show_point_value(x_percent)
+
+    def show_point_value(self, x_percent):
+        if not self.all_groups_data or self.total_samples == 0:
+            return
+        data = self.all_groups_data[self.current_group_index]
+        raw_values = data['decimal']
+        visible_range = self.zoom_end - self.zoom_start + 1
+        if visible_range <= 1:
+            return
+
+        index_in_visible = int(x_percent * (visible_range - 1))
+        index_in_visible = max(0, min(visible_range - 1, index_in_visible))
+        real_index = self.zoom_start + index_in_visible
+        real_index = max(0, min(len(raw_values) - 1, real_index))
+        raw_value = raw_values[real_index]
+
+        if self.freq_value > 0:
+            time_sec = real_index / self.freq_value
+            if self.t_unit == 'Millisecond (ms)':
+                x_display = f"{time_sec * 1e3:.2f} ms"
+            elif self.t_unit == 'Microsecond (us)':
+                x_display = f"{time_sec * 1e6:.1f} us"
+            else:
+                x_display = f"{time_sec:.4f} s"
+        else:
+            x_display = f"Sample {real_index}"
+
+        if self.axis_mode == 'Digital':
+            y_display = f"{int(raw_value)}"
+        else:
+            if self.v_unit == 'Millivolt (mV)':
+                y_display = f"{data['normalized'][real_index] * 1000:.2f} mV"
+            elif self.v_unit == 'Microvolt (uV)':
+                y_display = f"{data['normalized'][real_index] * 1000000:.1f} uV"
+            else:
+                y_display = f"{data['normalized'][real_index]:.4f} V"
+
+        self.point_info_text.value = f"📍 {x_display}  |  {y_display}  |  Raw: {int(raw_value)}"
+        self.point_info_text.update()
+
+
 def main(page: ft.Page):
     SignalMonitorApp(page)
+
 
 if __name__ == '__main__':
     try:
