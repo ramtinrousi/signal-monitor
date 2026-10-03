@@ -87,23 +87,10 @@ class SignalMonitorApp:
     def build_ui(self):
         self.main_info_label = ft.Text("No Data", size=9, color="#808c9d", weight=ft.FontWeight.BOLD)
 
-        self.point_info_text = ft.Text(
-            "",
-            size=8,
-            color="#ffd103",
-            weight=ft.FontWeight.BOLD
-        )
-
         self.chart_image = ft.Image(
             src="",
             expand=True,
             fit="fill"
-        )
-
-        self.chart_gesture = ft.GestureDetector(
-            content=self.chart_image,
-            on_tap_down=self.on_chart_tap,
-            expand=True
         )
 
         left_panel = ft.Container(
@@ -112,8 +99,7 @@ class SignalMonitorApp:
                     ft.Text("📊 Signal Monitor", size=11, weight=ft.FontWeight.BOLD, color="#2456B2"),
                     self.main_info_label
                 ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
-                self.chart_gesture,
-                self.point_info_text
+                self.chart_image
             ], spacing=1, expand=True),
             bgcolor="#0d121a",
             border_radius=4,
@@ -135,17 +121,13 @@ class SignalMonitorApp:
         )
 
         self.group_dropdown = ft.Dropdown(
+            label="Group",
             options=[ft.dropdown.Option("Select Group")],
             value="Select Group",
             text_size=9,
             dense=True,
             on_select=self.on_group_selected,
-            expand=True,
-            height=22,
-            content_padding=ft.padding.symmetric(horizontal=6, vertical=0),
-            border_radius=3,
-            border_color="#40516b",
-            bgcolor="#0a0d13"
+            expand=True
         )
 
         self.save_btn = ft.ElevatedButton(
@@ -780,54 +762,6 @@ class SignalMonitorApp:
         self.main_info_label.value = f"📊 G{self.current_group_index + 1} | {self.axis_mode}"
         self.update_bottom_stats(data)
         self.page.update()
-
-    def on_chart_tap(self, e):
-        if not self.all_groups_data or self.total_samples == 0:
-            return
-        if not self.chart_image.width:
-            return
-        x_percent = e.local_x / self.chart_image.width
-        x_percent = max(0.0, min(1.0, x_percent))
-        self.show_point_value(x_percent)
-
-    def show_point_value(self, x_percent):
-        if not self.all_groups_data or self.total_samples == 0:
-            return
-        data = self.all_groups_data[self.current_group_index]
-        raw_values = data['decimal']
-        visible_range = self.zoom_end - self.zoom_start + 1
-        if visible_range <= 1:
-            return
-
-        index_in_visible = int(x_percent * (visible_range - 1))
-        index_in_visible = max(0, min(visible_range - 1, index_in_visible))
-        real_index = self.zoom_start + index_in_visible
-        real_index = max(0, min(len(raw_values) - 1, real_index))
-        raw_value = raw_values[real_index]
-
-        if self.freq_value > 0:
-            time_sec = real_index / self.freq_value
-            if self.t_unit == 'Millisecond (ms)':
-                x_display = f"{time_sec * 1e3:.2f} ms"
-            elif self.t_unit == 'Microsecond (us)':
-                x_display = f"{time_sec * 1e6:.1f} us"
-            else:
-                x_display = f"{time_sec:.4f} s"
-        else:
-            x_display = f"Sample {real_index}"
-
-        if self.axis_mode == 'Digital':
-            y_display = f"{int(raw_value)}"
-        else:
-            if self.v_unit == 'Millivolt (mV)':
-                y_display = f"{data['normalized'][real_index] * 1000:.2f} mV"
-            elif self.v_unit == 'Microvolt (uV)':
-                y_display = f"{data['normalized'][real_index] * 1000000:.1f} uV"
-            else:
-                y_display = f"{data['normalized'][real_index]:.4f} V"
-
-        self.point_info_text.value = f"📍 {x_display}  |  {y_display}  |  Raw: {int(raw_value)}"
-        self.point_info_text.update()
 
 
 def main(page: ft.Page):
